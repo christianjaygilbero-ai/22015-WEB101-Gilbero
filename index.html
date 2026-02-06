@@ -1,8 +1,494 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-    <title>My First Web Page</title>
+<meta charset="UTF-8">
+<title>Math Quiz Game</title>
+
+<style>
+  /* ========== LAYOUT LAYER ========== */
+  /* Main page layout - centers content with flexbox */
+  body {
+    font-family: Arial, sans-serif;
+    background: #eef2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Main game container - full screen centered layout */
+  .game {
+    background: white;
+    width: 100%;
+    height: 100%;
+    padding: 40px;
+    border-radius: 0;
+    box-shadow: none;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  /* ========== DASHBOARD/HEADER LAYER ========== */
+  /* Top info bar showing mode, score, and timer */
+  .dashboard {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 30px;
+    font-weight: bold;
+    font-size: 24px;
+  }
+
+  /* ========== MODE SELECTION LAYER ========== */
+  /* Mode selection buttons */
+  .modes button {
+    width: 200px;
+    margin: 15px;
+    padding: 20px;
+    background: #222;
+    color: white;
+    font-size: 20px;
+  }
+
+  /* ========== QUESTION & ANSWERS LAYER ========== */
+  /* Question display styling */
+  .question {
+    font-size: 48px;
+    margin: 40px 0;
+  }
+
+  /* Answer buttons */
+  button {
+    padding: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background: #ddd;
+    margin: 10px;
+    min-width: 150px;
+  }
+
+  button:hover {
+    opacity: 0.9;
+  }
+
+  .feedback {
+    font-weight: bold;
+    margin-top: 30px;
+    font-size: 32px;
+  }
+
+  /* ========== FEEDBACK LAYER ========== */
+  /* Feedback message styling */
+  .correct { color: green; }
+  .wrong { color: red; }
+
+  /* ========== UTILITY CLASSES ========== */
+  /* Hide/show elements */
+  .hidden {
+    display: none;
+  }
+
+  /* ========== MODE SELECT SCREEN LAYER ========== */
+  #modeSelect h2 {
+    font-size: 48px;
+    margin-bottom: 40px;
+  }
+
+  /* ========== GAME OVER SCREEN LAYER ========== */
+  /* Game over screen styling */
+  #gameOver h2 {
+    font-size: 48px;
+    margin-bottom: 40px;
+  }
+
+  #gameOver p {
+    font-size: 28px;
+    margin: 20px 0;
+  }
+
+  /* Mistakes review container */
+  .mistakes-container {
+    max-height: 400px;
+    overflow-y: auto;
+    background: #f5f5f5;
+    padding: 20px;
+    border-radius: 5px;
+    margin: 30px 0;
+    text-align: left;
+    display: inline-block;
+  }
+
+  /* Individual mistake item styling */
+  .mistake-item {
+    background: white;
+    padding: 15px;
+    margin: 10px 0;
+    border-left: 4px solid red;
+    border-radius: 3px;
+    font-size: 20px;
+  }
+
+  .mistake-item .question-text {
+    font-weight: bold;
+    color: #333;
+  }
+
+  .mistake-item .answer-text {
+    color: red;
+    margin: 5px 0;
+  }
+
+  .mistake-item .correct-text {
+    color: green;
+    margin: 5px 0;
+  }
+
+  /* ========== USER INFO LAYER ========== */
+  /* User welcome and logout section */
+  .user-info {
+    background: #f0f0f0;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    text-align: center;
+    font-size: 18px;
+  }
+
+  .logout-btn {
+    width: 100%;
+    padding: 10px;
+    background: #d32f2f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 10px;
+  }
+
+  .logout-btn:hover {
+    opacity: 0.9;
+  }
+</style>
 </head>
+
 <body>
-    <h1>Hi, my name is Christian Jay P. Gilbero</h1>
+
+<div class="game">
+
+  <!-- ========== MODE SELECTION SCREEN ========== -->
+  <!-- Shows after login - user selects difficulty level -->
+  <div id="modeSelect" class="hidden">
+    <div class="user-info">
+      Welcome, <span id="userDisplay"></span>!
+      <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
+    <h2>Select Mode</h2>
+    <div class="modes">
+      <button onclick="startGame('noob')">🟢 Noob</button>
+      <button onclick="startGame('expert')">🔵 Expert</button>
+      <button onclick="startGame('god')">🔴 God</button>
+      <button onclick="startGame('hacker')">🟣 Hacker</button>
+    </div>
+  </div>
+
+  <!-- ========== GAME PLAY SCREEN ========== -->
+  <!-- Main quiz screen - shows questions and answers -->
+  <div id="gameArea" class="hidden">
+    <div class="dashboard">
+      <div>Mode: <span id="modeName"></span></div>
+      <div>Score: <span id="score">0</span></div>
+      <div>Time: <span id="timer">15</span>s</div>
+    </div>
+
+    <div class="question" id="question"></div>
+    <div id="answers"></div>
+    <div class="feedback" id="feedback"></div>
+  </div>
+
+  <!-- ========== GAME OVER SCREEN ========== -->
+  <!-- Final score screen - shows results and mistakes -->
+  <div id="gameOver" class="hidden">
+    <h2>Game Over</h2>
+    <p>Mode: <span id="finalMode"></span></p>
+    <p>Final Score: <span id="finalScore"></span>/10</p>
+    <div id="mistakesDiv" class="mistakes-container hidden">
+      <h3 style="margin-top: 0; text-align: center;">Questions You Got Wrong</h3>
+      <div id="mistakesList"></div>
+    </div>
+    <button onclick="backToModes()">Back to Modes</button>
+    <button onclick="logout()">Logout</button>
+  </div>
+
+</div>
+
+<script>
+/* ========== GLOBAL VARIABLES ========== */
+/* Game state variables */
+let score = 0;
+let currentQuestion = 1;
+const maxQuestions = 10;
+let correctAnswer;
+let maxNumber = 10;
+let mode = "";
+let timePerQuestion = 15;
+let timerInterval;
+let timeAddCorrect = 2;
+let timeSubtractWrong = 3;
+let currentQuestionText = "";
+let mistakes = [];
+let currentUser = null;
+
+/* ========== INITIALIZATION FUNCTION ========== */
+/* Load user and display mode selection on page load */
+function init() {
+  const savedUser = localStorage.getItem("currentUser");
+  if (savedUser) {
+    currentUser = JSON.parse(savedUser);
+    showModes();
+  } else {
+    window.location.href = "login.html";
+  }
+}
+
+/* Display mode selection screen */
+function showModes() {
+  document.getElementById("modeSelect").classList.remove("hidden");
+  document.getElementById("userDisplay").textContent = currentUser.name;
+}
+
+/* ========== GAME START & SETUP FUNCTIONS ========== */
+/* Initialize game with selected mode and settings */
+function startGame(selectedMode) {
+  mode = selectedMode;
+
+  if (mode === "noob") {
+    maxNumber = 5;
+    timePerQuestion = 20;
+    timeAddCorrect = 3;
+    timeSubtractWrong = 2;
+  }
+  if (mode === "expert") {
+    maxNumber = 10;
+    timePerQuestion = 15;
+    timeAddCorrect = 2;
+    timeSubtractWrong = 3;
+  }
+  if (mode === "god") {
+    maxNumber = 50;
+    timePerQuestion = 10;
+    timeAddCorrect = 1;
+    timeSubtractWrong = 4;
+  }
+  if (mode === "hacker") {
+    maxNumber = 100;
+    timePerQuestion = 5;
+    timeAddCorrect = 1;
+    timeSubtractWrong = 5;
+  }
+
+  score = 0;
+  currentQuestion = 1;
+  mistakes = [];
+  document.getElementById("modeName").textContent = mode.toUpperCase();
+  document.getElementById("modeSelect").classList.add("hidden");
+  document.getElementById("gameArea").classList.remove("hidden");
+
+  generateQuestion();
+}
+
+/* ========== TIMER FUNCTIONS ========== */
+/* Start countdown timer for current question */
+function startTimer() {
+  let timeLeft = timePerQuestion;
+  document.getElementById("timer").textContent = timeLeft;
+
+  clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById("timer").textContent = timeLeft;
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      timeOutAnswer();
+    }
+  }, 1000);
+}
+
+/* Adjust time per question based on correct/wrong answer */
+function adjustTimer(isCorrect) {
+  if (isCorrect) {
+    timePerQuestion += timeAddCorrect;
+  } else {
+    timePerQuestion = Math.max(1, timePerQuestion - timeSubtractWrong);
+  }
+}
+
+/* Handle timeout when user runs out of time */
+function timeOutAnswer() {
+  const feedback = document.getElementById("feedback");
+  feedback.textContent = "Time's up!";
+  feedback.className = "feedback wrong";
+  
+  document.getElementById("score").textContent = score;
+  
+  setTimeout(() => {
+    feedback.textContent = "";
+    currentQuestion++;
+    generateQuestion();
+  }, 800);
+}
+
+/* ========== QUESTION GENERATION FUNCTIONS ========== */
+/* Create random math question with operation and operands */
+function generateQuestion() {
+  if (currentQuestion > maxQuestions) {
+    endGame();
+    return;
+  }
+
+  clearInterval(timerInterval);
+
+  const num1 = Math.floor(Math.random() * maxNumber) + 1;
+  const num2 = Math.floor(Math.random() * maxNumber) + 1;
+  const ops = ["+", "-", "*", "/"];
+  const op = ops[Math.floor(Math.random() * ops.length)];
+
+  let questionText;
+
+  switch (op) {
+    case "+":
+      correctAnswer = num1 + num2;
+      questionText = `${num1} + ${num2}`;
+      break;
+    case "-":
+      correctAnswer = num1 - num2;
+      questionText = `${num1} - ${num2}`;
+      break;
+    case "*":
+      correctAnswer = num1 * num2;
+      questionText = `${num1} × ${num2}`;
+      break;
+    case "/":
+      correctAnswer = Math.floor(num1 / num2);
+      questionText = `${num1} ÷ ${num2}`;
+      break;
+  }
+
+  currentQuestionText = questionText;
+  document.getElementById("question").textContent = questionText;
+  generateAnswers();
+  startTimer();
+}
+
+/* Generate 4 answer options (1 correct + 3 wrong) and shuffle */
+function generateAnswers() {
+  const answersDiv = document.getElementById("answers");
+  answersDiv.innerHTML = "";
+
+  const options = new Set([correctAnswer]);
+  while (options.size < 4) {
+    options.add(correctAnswer + Math.floor(Math.random() * 10) - 5);
+  }
+
+  [...options].sort(() => Math.random() - 0.5).forEach(val => {
+    const btn = document.createElement("button");
+    btn.textContent = val;
+    btn.onclick = () => checkAnswer(val);
+    answersDiv.appendChild(btn);
+  });
+}
+
+/* ========== ANSWER VALIDATION FUNCTIONS ========== */
+/* Random positive and negative feedback messages */
+const correctMessages = ["Great 🎉", "Nice 😎", "Wow 🔥"];
+const wrongMessages = ["Aww 😢", "Damn 😬", "Tulog na 😴"];
+
+/* Check if answer is correct and update score */
+function checkAnswer(selected) {
+  clearInterval(timerInterval);
+  const feedback = document.getElementById("feedback");
+  const isCorrect = selected === correctAnswer;
+
+  if (isCorrect) {
+    score++;
+    feedback.textContent =
+      correctMessages[Math.floor(Math.random() * correctMessages.length)] + ` (+${timeAddCorrect}s)`;
+    feedback.className = "feedback correct";
+    adjustTimer(true);
+  } else {
+    feedback.textContent =
+      wrongMessages[Math.floor(Math.random() * wrongMessages.length)] + ` (-${timeSubtractWrong}s)`;
+    feedback.className = "feedback wrong";
+    adjustTimer(false);
+    mistakes.push({
+      question: currentQuestionText,
+      selected: selected,
+      correct: correctAnswer
+    });
+  }
+
+  document.getElementById("score").textContent = score;
+
+  setTimeout(() => {
+    feedback.textContent = "";
+    currentQuestion++;
+    generateQuestion();
+  }, 800);
+}
+
+/* ========== GAME END FUNCTIONS ========== */
+/* Calculate final score and display results with mistakes */
+function endGame() {
+  clearInterval(timerInterval);
+  document.getElementById("gameArea").classList.add("hidden");
+  document.getElementById("gameOver").classList.remove("hidden");
+  document.getElementById("finalScore").textContent = score;
+  document.getElementById("finalMode").textContent = mode.toUpperCase();
+  
+  if (mistakes.length > 0) {
+    const mistakesDiv = document.getElementById("mistakesDiv");
+    const mistakesList = document.getElementById("mistakesList");
+    mistakesList.innerHTML = "";
+    
+    mistakes.forEach((mistake, index) => {
+      const mistakeItem = document.createElement("div");
+      mistakeItem.className = "mistake-item";
+      mistakeItem.innerHTML = `
+        <div class="question-text">Question ${index + 1}: ${mistake.question}</div>
+        <div class="answer-text">Your answer: <strong>${mistake.selected}</strong></div>
+        <div class="correct-text">Correct answer: <strong>${mistake.correct}</strong></div>
+      `;
+      mistakesList.appendChild(mistakeItem);
+    });
+    
+    mistakesDiv.classList.remove("hidden");
+  }
+}
+
+/* ========== NAVIGATION FUNCTIONS ========== */
+/* Return to mode selection screen */
+function backToModes() {
+  document.getElementById("gameOver").classList.add("hidden");
+  document.getElementById("modeSelect").classList.remove("hidden");
+}
+
+/* Clear user session and return to login page */
+function logout() {
+  localStorage.removeItem("currentUser");
+  window.location.href = "login.html";
+}
+
+/* ========== PAGE LOAD EVENT ========== */
+/* Initialize game when page fully loads */
+window.addEventListener("DOMContentLoaded", init);
+</script>
+
 </body>
 </html>
